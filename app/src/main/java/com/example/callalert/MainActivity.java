@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showContacts() throws PackageManager.NameNotFoundException {
-        ArrayList<String> contacts = new ArrayList<>();
+        ArrayList<Contact> contacts = new ArrayList<>();
 
         // 연락처의 이름과 전화번호를 가져옵니다.
         ContentResolver contentResolver = getContentResolver();
@@ -68,7 +68,8 @@ public class MainActivity extends AppCompatActivity {
             while (cursor.moveToNext()) {
                 String name = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
                 String number = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                String contact = name + " (" + number + ")";
+                String ID = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.CONTACT_ID));
+                Contact contact = new Contact(name, number, ID);
                 if (!contacts.contains(contact)) { // 중복된 이름이 없는 경우에만 추가합니다.
                     contacts.add(contact);
                 }
@@ -79,5 +80,6 @@ public class MainActivity extends AppCompatActivity {
         ContactAdapter adapter = new ContactAdapter(this, contacts);
         listView.setAdapter(adapter);
     }
+
 
 }

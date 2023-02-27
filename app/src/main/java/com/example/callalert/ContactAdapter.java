@@ -4,13 +4,11 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.Build;
 import android.provider.CallLog;
-import android.provider.ContactsContract;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -40,12 +38,12 @@ public class ContactAdapter extends ArrayAdapter<String> {
     private static final int REQUEST_CODE_READ_CALL_LOG = 1;
     long installationTime = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0).firstInstallTime;
 
-    public ContactAdapter(Context context, ArrayList<String> contacts) throws PackageManager.NameNotFoundException {
+    public ContactAdapter(Context context, ArrayList<Contact> contacts, long installationTime) throws PackageManager.NameNotFoundException {
         super(context, 0, contacts);
         mToggleStates = new ArrayList<>();
         for (int i = 0; i < contacts.size(); i++) {
             mToggleStates.add(false);
-            mLastCallTimeMap.put(contacts(i), installationTime);
+            mLastCallTimeMap.put(i, installationTime);
             Log.d("installTime",String.valueOf(installationTime));
         }
     }
@@ -74,26 +72,26 @@ public class ContactAdapter extends ArrayAdapter<String> {
                 // 버튼이 켜진 경우
                 Toast.makeText(getContext(), name + " button on", Toast.LENGTH_SHORT).show();
 
-                // 이전에 전화를 건 시간 저장
-                mLastCallTimeMap.put(position, getLastCallTime(getContext(), name));
-
-                Log.d("Time",String.valueOf(mLastCallTimeMap.get(position)));
+//                // 이전에 전화를 건 시간 저장
+//                mLastCallTimeMap.put(position, getLastCallTime(getContext(), name));
+//
+//                Log.d("Time",String.valueOf(mLastCallTimeMap.get(position)));
 
             } else {
                 // 버튼이 꺼진 경우
                 Toast.makeText(getContext(), name + " button off", Toast.LENGTH_SHORT).show();
 
-                // 이전에 전화를 건 시간 가져오기
-                long lastCallTime = mLastCallTimeMap.get(position);
-
-                // 현재 시간과 비교하여 시간 간격 이내인지 확인
-                if (System.currentTimeMillis() - lastCallTime > TIME_INTERVAL) {
-                    // 24시간 이내에 전화를 걸지 않았으므로 알림 보내기
-                    showNotification(getContext(), position);
-                } else {
-                    // 24시간 이내에 전화를 걸었으므로 시간 갱신
-                    mLastCallTimeMap.put(position, System.currentTimeMillis() - TIME_INTERVAL);
-                }
+//                // 이전에 전화를 건 시간 가져오기
+//                long lastCallTime = mLastCallTimeMap.get(position);
+//
+//                // 현재 시간과 비교하여 시간 간격 이내인지 확인
+//                if (System.currentTimeMillis() - lastCallTime > TIME_INTERVAL) {
+//                    // 24시간 이내에 전화를 걸지 않았으므로 알림 보내기
+//                    showNotification(getContext(), position);
+//                } else {
+//                    // 24시간 이내에 전화를 걸었으므로 시간 갱신
+//                    mLastCallTimeMap.put(position, System.currentTimeMillis() - TIME_INTERVAL);
+//                }
             }
         });
 
@@ -187,3 +185,4 @@ public class ContactAdapter extends ArrayAdapter<String> {
         notificationManager.notify(position, builder.build());
     }
 }
+
