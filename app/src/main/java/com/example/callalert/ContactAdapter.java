@@ -11,6 +11,7 @@ import android.database.Cursor;
 import android.os.Build;
 import android.provider.CallLog;
 import android.provider.ContactsContract;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,14 +38,18 @@ public class ContactAdapter extends ArrayAdapter<String> {
     private Map<Integer, Long> mLastCallTimeMap = new HashMap<>(); // 이전에 전화한 시간을 저장하는 Map
     private static final long TIME_INTERVAL = 24 * 60 * 60 * 1000; // 시간 간격 (24시간)
     private static final int REQUEST_CODE_READ_CALL_LOG = 1;
+    long installationTime = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0).firstInstallTime;
 
-    public ContactAdapter(Context context, ArrayList<String> contacts) {
+    public ContactAdapter(Context context, ArrayList<String> contacts) throws PackageManager.NameNotFoundException {
         super(context, 0, contacts);
         mToggleStates = new ArrayList<>();
         for (int i = 0; i < contacts.size(); i++) {
             mToggleStates.add(false);
+            mLastCallTimeMap.put(contacts(i), installationTime);
+            Log.d("installTime",String.valueOf(installationTime));
         }
     }
+
 
     @NonNull
     @Override
@@ -72,6 +77,8 @@ public class ContactAdapter extends ArrayAdapter<String> {
                 // 이전에 전화를 건 시간 저장
                 mLastCallTimeMap.put(position, getLastCallTime(getContext(), name));
 
+                Log.d("Time",String.valueOf(mLastCallTimeMap.get(position)));
+
             } else {
                 // 버튼이 꺼진 경우
                 Toast.makeText(getContext(), name + " button off", Toast.LENGTH_SHORT).show();
@@ -90,9 +97,7 @@ public class ContactAdapter extends ArrayAdapter<String> {
             }
         });
 
-        // 리스트뷰가 다시 그려질 때 이전에 설정한 토글 버튼의 상태를 설정합니다.
-        toggleButton.setChecked(mToggleStates.get(position));
-
+        Log.d("ContactAdapter", "mToggleStates: " + mToggleStates.toString());
         return convertView;
     }
 
@@ -173,8 +178,8 @@ public class ContactAdapter extends ArrayAdapter<String> {
         // 알림 생성
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "call_alert")
                 .setSmallIcon(R.drawable.notification_icon)
-                .setContentTitle("Call Alert")
-                .setContentText("24 hours have passed since the last call.")
+                .setContentTitle("Call Alert" + name)
+                .setContentText(name + "24 hours have passed since the last call.")
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true);
 

@@ -35,7 +35,11 @@ public class MainActivity extends AppCompatActivity {
 
         int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS);
         if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
-            showContacts();
+            try {
+                showContacts();
+            } catch (PackageManager.NameNotFoundException e) {
+                throw new RuntimeException(e);
+            }
         } else {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.READ_CONTACTS},
@@ -43,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void showContacts() {
+    private void showContacts() throws PackageManager.NameNotFoundException {
         ArrayList<String> contacts = new ArrayList<>();
 
         // 연락처의 이름과 전화번호를 가져옵니다.
@@ -74,16 +78,6 @@ public class MainActivity extends AppCompatActivity {
 
         ContactAdapter adapter = new ContactAdapter(this, contacts);
         listView.setAdapter(adapter);
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERMISSIONS_REQUEST_READ_CONTACTS) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                showContacts();
-            }
-        }
     }
 
 }
