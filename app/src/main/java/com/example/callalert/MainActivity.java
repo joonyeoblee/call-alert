@@ -2,15 +2,18 @@ package com.example.callalert;
 
 // READ_CONTACTS 권한이 필요합니다.
 // Manifest.permission.READ_CONTACTS를 권한에 추가해주세요.
-
+import java.util.Calendar;
+import java.util.Date;
 import android.Manifest;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.provider.ContactsContract;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
+
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -26,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.listview_main);
 
         listView = findViewById(R.id.list_view);
 
@@ -42,23 +45,39 @@ public class MainActivity extends AppCompatActivity {
 
     private void showContacts() {
         ArrayList<String> contacts = new ArrayList<>();
+
+        // 연락처의 이름과 전화번호를 가져옵니다.
         ContentResolver contentResolver = getContentResolver();
-        Cursor cursor = contentResolver.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
+        Cursor cursor = contentResolver.query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                new String[]{
+                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
+                        ContactsContract.CommonDataKinds.Phone.NUMBER,
+                        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME
+                },
+                null,
+                null,
+                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC"
+        );
 
         if (cursor != null && cursor.getCount() > 0) {
             while (cursor.moveToNext()) {
-                String name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-                contacts.add(name);
+                String name = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+                String number = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                String contact = name + " (" + number + ")";
+                if (!contacts.contains(contact)) { // 중복된 이름이 없는 경우에만 추가합니다.
+                    contacts.add(contact);
+                }
             }
             cursor.close();
         }
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, contacts);
+        ContactAdapter adapter = new ContactAdapter(this, contacts);
         listView.setAdapter(adapter);
     }
 
     @Override
-    public void  onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSIONS_REQUEST_READ_CONTACTS) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -66,4 +85,5 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
 }
