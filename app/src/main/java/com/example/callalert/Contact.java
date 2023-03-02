@@ -2,24 +2,26 @@ package com.example.callalert;
 
 public class Contact {
     private String name;
-    private String phoneNumber;
-    private String contactId;
+    private String number;
+    private String id;
 
-    public Contact(String name, String phoneNumber, String contactId) {
+
+    public Contact(String name, String number, String id) {
         this.name = name;
-        this.phoneNumber = phoneNumber;
-        this.contactId = contactId;
+        this.number = number;
+        this.id = id;
     }
 
     public String getName() {
         return name;
     }
 
-    public String getPhoneNumber() {
-        return phoneNumber;
+    public String getNumber() {
+        return number;
     }
 
-    public String getContactId() {
-        return contactId;
+    public String getId() {
+        return id;
     }
+
 }

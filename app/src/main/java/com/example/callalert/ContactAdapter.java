@@ -1,6 +1,7 @@
 package com.example.callalert;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -25,29 +26,40 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
+import com.example.myapplication.R;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ContactAdapter extends ArrayAdapter<String> {
+public class ContactAdapter extends ArrayAdapter<Contact> {
 
-    private ArrayList<Boolean> mToggleStates;
     private Map<Integer, Long> mLastCallTimeMap = new HashMap<>(); // 이전에 전화한 시간을 저장하는 Map
+    private ArrayList<Integer> mSelectedContacts = new ArrayList<>(); // 선택된 연락처의 인덱스를 저장하는 ArrayList
+
     private static final long TIME_INTERVAL = 24 * 60 * 60 * 1000; // 시간 간격 (24시간)
     private static final int REQUEST_CODE_READ_CALL_LOG = 1;
     long installationTime = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0).firstInstallTime;
 
-    public ContactAdapter(Context context, ArrayList<Contact> contacts, long installationTime) throws PackageManager.NameNotFoundException {
+    private Context context;
+    private ArrayList<Contact> contacts;
+    private ArrayList<Boolean> mToggleStates;
+    private ArrayList<Integer> mToggleStatesNum;
+
+    public ContactAdapter(Context context, ArrayList<Contact> contacts, ArrayList<Integer> toggleNum) throws PackageManager.NameNotFoundException {
         super(context, 0, contacts);
-        mToggleStates = new ArrayList<>();
+        this.mToggleStatesNum = toggleNum;
+       /this.mToggleStates = new ArrayList<Boolean>(Collections.nCopies(contacts.size(), false)); // initialize the mToggleStates with false
+        installationTime = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).firstInstallTime;
         for (int i = 0; i < contacts.size(); i++) {
-            mToggleStates.add(false);
             mLastCallTimeMap.put(i, installationTime);
             Log.d("installTime",String.valueOf(installationTime));
         }
+        toggleStatesToBoolean();
     }
-
 
     @NonNull
     @Override
@@ -59,43 +71,35 @@ public class ContactAdapter extends ArrayAdapter<String> {
         TextView nameTextView = convertView.findViewById(R.id.contact_name);
         Switch toggleButton = convertView.findViewById(R.id.toggle_button);
 
-        String name = getItem(position);
-        nameTextView.setText(name);
+        Contact contact = getItem(position);
+        nameTextView.setText(contact.getName()); // set the contact name to the TextView
 
-        // 리스트뷰가 다시 그려질 때 이전에 설정한 토글 버튼의 상태를 설정합니다.
         toggleButton.setChecked(mToggleStates.get(position));
 
-        // 토글 버튼 클릭 이벤트 리스너 설정
         toggleButton.setOnCheckedChangeListener((buttonView, isChecked) -> {
             mToggleStates.set(position, isChecked);
             if (isChecked) {
                 // 버튼이 켜진 경우
-                Toast.makeText(getContext(), name + " button on", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), contact.getName() + " button on", Toast.LENGTH_SHORT).show();
+                mSelectedContacts.add(position);
 
-//                // 이전에 전화를 건 시간 저장
-//                mLastCallTimeMap.put(position, getLastCallTime(getContext(), name));
-//
-//                Log.d("Time",String.valueOf(mLastCallTimeMap.get(position)));
-
+                // Firebase에 현재 toggle 버튼 상태를 저장
+                FirebaseDatabase database = FirebaseDatabase.getInstance();
+                DatabaseReference toggleRef = database.getReference("toggle");
+                toggleRef.child(String.valueOf(position)).setValue(1);
             } else {
                 // 버튼이 꺼진 경우
-                Toast.makeText(getContext(), name + " button off", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), contact.getName() + " button off", Toast.LENGTH_SHORT).show();
+                mSelectedContacts.remove(Integer.valueOf(position));
 
-//                // 이전에 전화를 건 시간 가져오기
-//                long lastCallTime = mLastCallTimeMap.get(position);
-//
-//                // 현재 시간과 비교하여 시간 간격 이내인지 확인
-//                if (System.currentTimeMillis() - lastCallTime > TIME_INTERVAL) {
-//                    // 24시간 이내에 전화를 걸지 않았으므로 알림 보내기
-//                    showNotification(getContext(), position);
-//                } else {
-//                    // 24시간 이내에 전화를 걸었으므로 시간 갱신
-//                    mLastCallTimeMap.put(position, System.currentTimeMillis() - TIME_INTERVAL);
-//                }
+                // Firebase에 현재 toggle 버튼 상태를 저장
+                FirebaseDatabase database = FirebaseDatabase.getInstance();
+                DatabaseReference toggleRef = database.getReference("toggle");
+                toggleRef.child(String.valueOf(position)).setValue(0);
             }
         });
 
-        Log.d("ContactAdapter", "mToggleStates: " + mToggleStates.toString());
+        //Log.d("ContactAdapter", "mToggleStates: " + mToggleStates.toString());
         return convertView;
     }
 
@@ -157,8 +161,11 @@ public class ContactAdapter extends ArrayAdapter<String> {
     }
 
     // 알림을 보내는 메소드
+    // 알림을 보내는 메소드
+    @SuppressLint("MissingPermission")
     private void showNotification(Context context, int position) {
-        String name = getItem(position);
+        Contact contact = getItem(position);
+        String name = contact.getName();
         // 알림 채널 생성 (API 레벨 26 이상에서는 필수)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             String channelId = "call_alert";
@@ -183,6 +190,14 @@ public class ContactAdapter extends ArrayAdapter<String> {
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
         notificationManager.notify(position, builder.build());
+    }
+    //mToggleStatesNum 배열에 해당하는 인덱스의 값을 true로 변경하는 기능
+    public void toggleStatesToBoolean() {
+        for (int i = 0; i < mToggleStatesNum.size(); i++) {
+            int index = mToggleStatesNum.get(i);
+            mToggleStates.set(index, true);
+        }
+        notifyDataSetChanged();
     }
 }
 
