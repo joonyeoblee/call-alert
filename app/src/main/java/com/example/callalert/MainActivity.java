@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ListView listView;
     ArrayAdapter adapter;
-    private ArrayList<Integer> mToggleStates = new ArrayList<>(); // ArrayList to store the toggle state to be used with the listview
+    private ArrayList<Integer> mToggleStatesNum = new ArrayList<>(); // ArrayList to store the toggle state to be used with the listview
 
     private DatabaseReference mToggleRef; // Firebase database reference
 
@@ -51,10 +51,10 @@ public class MainActivity extends AppCompatActivity {
         mToggleRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                mToggleStates.clear(); // Clear the old toggle state values
+                mToggleStatesNum.clear(); // Clear the old toggle state values
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    Boolean toggleState = snapshot.getValue(Boolean.class);
-                    mToggleStates.add(toggleState == 1); // Convert the integer value to boolean
+                    Integer toggleState = snapshot.getValue(Integer.class);
+                    mToggleStatesNum.add(toggleState); // Convert the integer value to boolean
                 }
 
                 adapter.notifyDataSetChanged(); // Notify the adapter to update the list view
@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
             cursor. close();
         }
 
-        adapter = new ContactAdapter(this, contacts, mToggleStates); // pass mToggleStates
+        adapter = new ContactAdapter(this, contacts, mToggleStatesNum); // pass mToggleStates
         listView.setAdapter(adapter);
     }
 

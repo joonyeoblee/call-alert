@@ -1,5 +1,7 @@
 package com.example.callalert;
 
+import static android.content.ContentValues.TAG;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -52,7 +54,7 @@ public class ContactAdapter extends ArrayAdapter<Contact> {
     public ContactAdapter(Context context, ArrayList<Contact> contacts, ArrayList<Integer> toggleNum) throws PackageManager.NameNotFoundException {
         super(context, 0, contacts);
         this.mToggleStatesNum = toggleNum;
-       /this.mToggleStates = new ArrayList<Boolean>(Collections.nCopies(contacts.size(), false)); // initialize the mToggleStates with false
+        this.mToggleStates = new ArrayList<Boolean>(Collections.nCopies(contacts.size(), false)); // initialize the mToggleStates with false
         installationTime = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).firstInstallTime;
         for (int i = 0; i < contacts.size(); i++) {
             mLastCallTimeMap.put(i, installationTime);
@@ -79,23 +81,35 @@ public class ContactAdapter extends ArrayAdapter<Contact> {
         toggleButton.setOnCheckedChangeListener((buttonView, isChecked) -> {
             mToggleStates.set(position, isChecked);
             if (isChecked) {
-                // 버튼이 켜진 경우
+                // if the button is on
                 Toast.makeText(getContext(), contact.getName() + " button on", Toast.LENGTH_SHORT).show();
                 mSelectedContacts.add(position);
 
-                // Firebase에 현재 toggle 버튼 상태를 저장
+                // Save the current toggle button state to Firebase
                 FirebaseDatabase database = FirebaseDatabase.getInstance();
                 DatabaseReference toggleRef = database.getReference("toggle");
-                toggleRef.child(String.valueOf(position)).setValue(1);
+                toggleRef.child(String.valueOf(position)).setValue(1, (error, ref) -> {
+                    if (error != null) {
+                        Log.e(TAG, "Data could not be saved: " + error.getMessage());
+                    } else {
+                        Log.d(TAG, "Data saved successfully." + position);
+                    }
+                });
             } else {
-                // 버튼이 꺼진 경우
+                // if the button is off
                 Toast.makeText(getContext(), contact.getName() + " button off", Toast.LENGTH_SHORT).show();
                 mSelectedContacts.remove(Integer.valueOf(position));
 
-                // Firebase에 현재 toggle 버튼 상태를 저장
+                // Delete the current toggle button state from Firebase
                 FirebaseDatabase database = FirebaseDatabase.getInstance();
                 DatabaseReference toggleRef = database.getReference("toggle");
-                toggleRef.child(String.valueOf(position)).setValue(0);
+                toggleRef.child(String.valueOf(position)).removeValue((error, ref) -> {
+                    if (error != null) {
+                        Log.e(TAG, "Data could not be deleted: " + error.getMessage());
+                    } else {
+                        Log.d(TAG, "Data deleted successfully." + position);
+                    }
+                });
             }
         });
 
